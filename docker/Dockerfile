@@ -50,7 +50,7 @@ RUN apt clean \
 ##### Python environment setup #####
 
 ### Virtual environment setup ###
-ARG virtual_env_name=plan_similarity
+ARG virtual_env_name=plan_kernel
 ARG virtual_env_path=/venv/${virtual_env_name}
 # Create virtual environment and set path
 RUN python3 -m venv ${virtual_env_path}

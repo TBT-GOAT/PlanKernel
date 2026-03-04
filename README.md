@@ -39,9 +39,9 @@ sudo apt install -y \
     python3-venv
 
 mkdir -p ~/venv
-python3.11 -m venv ~/venv/plan_similarity
+python3.11 -m venv ~/venv/plan_kernel
 
-source ~/venv/plan_similarity/bin/activate
+source ~/venv/plan_kernel/bin/activate
 
 cd /your/project/directory/path
 cd ./docker
