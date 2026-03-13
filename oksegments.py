@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 
 import Rhino.Geometry as rg
@@ -41,7 +42,6 @@ def is_nonzero_z(pt, tol): # Returns True if the Z coordinate is not zero
 
 def discretize_curve(curve, tol, warnings, obj_id): # Discretizes a curve into N segments 
     segments = []
-
     length = curve.GetLength()
     if length is None or length < tol:
         warnings.append("  WARNING [" + str(obj_id) + "]: curve has null length. Ignored.")

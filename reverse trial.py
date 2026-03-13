@@ -286,7 +286,7 @@ for line in SEGMENTS:
     # Parsing: "s x1 y1 x2 y2"
     parts = line.split()  
     if len(parts) < 5:
-        print("Riga non valida: " + line)
+        print("Not valid row: " + line)
         continue
 
     x1 = float(parts[1])

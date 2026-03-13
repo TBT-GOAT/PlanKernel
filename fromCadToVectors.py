@@ -11,7 +11,7 @@ DECIMAL_PLACES       = 5
 COORD_SEPARATOR      = " "
 INCLUDE_HIDDEN       = False
 DEDUPLICATE_SEGMENTS = True
-NORMALIZE_COORDS     = True
+OUTPUT_FILENAME = ["segments.cin", "segments.txt"]
 
 LAYERS_TO_EXPORT = [
     u"\u58c1",                                      # 壁 wall
@@ -39,23 +39,31 @@ def is_nonzero_z(pt, tol): # Returns True if the Z coordinate is not zero
     return abs(pt.Z) > tol
 
 
-def discretize_curve(curve, tol, warnings, obj_id): # Discretizes a curve into N segments 
+def discretize_curve(curve, tol, warnings, obj_id, split_num=16): # Discretizes a curve into N segments 
     segments = []
 
     length = curve.GetLength()
     if length is None or length < tol:
-        warnings.append("  WARNING [" + str(obj_id) + "]: curve has null length. Ignored.")
-        return segments
+        if not curve.IsClosed:
+            warnings.append("  WARNING [" + str(obj_id) + "]: curve too short. Returning endpoint segment.")
+            return [(curve.PointAtStart, curve.PointAtEnd)]
+        else:
+            warnings.append("  WARNING [" + str(obj_id) + "]: closed curve has null length. Ignored.")
+            return segments
 
-    n_segments = int(math.ceil(length))
-    if n_segments < 1:
-        n_segments = 1
+    if curve.IsClosed and length < 3 * tol:
+        warnings.append("  WARNING [" + str(obj_id) + "]: short closed curve. Dividing into " + str(split_num) + " parts.")
+        n_segments = split_num
+    else:
+        n_segments = int(math.ceil(length))
+        if n_segments < 1:
+            n_segments = 1
 
     points = []
     for i in range(n_segments + 1):
-        fraction = i / float(n_segments) # Search for the point on the curve at the given arc length fraction
-        success, t = curve.NormalizedLengthParameter(fraction) # success is a boolean: True if the point t was found
-        if not success: # If the point cannot be calculated, skip it and log a warning
+        fraction = i / float(n_segments)
+        success, t = curve.NormalizedLengthParameter(fraction)
+        if not success:
             warnings.append("  WARNING [" + str(obj_id) + "]: point at fraction " + str(round(fraction, 3)) + " could not be calculated.")
             continue
         points.append(curve.PointAt(t))
@@ -138,27 +146,6 @@ def deduplicate(segments_by_layer, tol):# Removes duplicate segments within each
         result[layer] = unique
     return result
 
-
-def normalize_segments(segments_by_layer): # Translates all segments so that the minimum X and Y become 0 # This moves the drawing origin to (0, 0)
-    all_points = []
-    for segs in segments_by_layer.values():
-        for (p1, p2) in segs:
-            all_points.append(p1)
-            all_points.append(p2)
-
-    min_x = min(p.X for p in all_points)
-    min_y = min(p.Y for p in all_points)
-
-    result = {}
-    for layer, segs in segments_by_layer.items():
-        result[layer] = []
-        for (p1, p2) in segs:
-            new_p1 = rg.Point3d(p1.X - min_x, p1.Y - min_y, 0.0)
-            new_p2 = rg.Point3d(p2.X - min_x, p2.Y - min_y, 0.0)
-            result[layer].append((new_p1, new_p2))
-    return result
-
-
 def format_point(pt): # Formats a point as "X Y" with the configured number of decimal places
     fmt = "{:." + str(DECIMAL_PLACES) + "f}"
     return fmt.format(pt.X) + COORD_SEPARATOR + fmt.format(pt.Y)
@@ -191,10 +178,6 @@ def main():
     if DEDUPLICATE_SEGMENTS and segments_by_layer:
         segments_by_layer = deduplicate(segments_by_layer, tol)
 
-    # Translate coordinates so that the bottom-left corner is at (0, 0)
-    if NORMALIZE_COORDS and segments_by_layer:
-        segments_by_layer = normalize_segments(segments_by_layer)
-
     # Print warnings
     if warnings:
         print("")
@@ -202,18 +185,25 @@ def main():
             print(w)
         print("")
 
-    # Print output
+    # Save output in a .cin file in the same folder as the .dwg file
     if not segments_by_layer:
         print("ERROR: no segments found!")
         print("Check that the layers in the file match those in LAYERS_TO_EXPORT.")
         return
 
-    total = 0
-    for layer_name, segs in segments_by_layer.items():
-        for (p1, p2) in segs:
-            p1_str = format_point(p1)
-            p2_str = format_point(p2)
-            print("s " + p1_str + " " + p2_str)
-            total += 1
+    import os
+    folder = Rhino.ApplicationSettings.FileSettings.WorkingFolder
+    if not folder:
+        print("ERROR: could not find the working folder.")
+        return
+    for filename in OUTPUT_FILENAME:
+        output_path = os.path.join(folder, filename)
+        with open(output_path, "w") as f:
+            for layer_name, segs in segments_by_layer.items():
+                for (p1, p2) in segs:
+                    p1_str = format_point(p1)
+                    p2_str = format_point(p2)
+                    f.write("s " + p1_str + " " + p2_str + "\n")
+        print("Saved to: " + output_path)
 
 main()
