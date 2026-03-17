@@ -2,6 +2,7 @@
 import scriptcontext as sc
 import Rhino.Geometry as rg
 import Rhino
+import rhinoscriptsyntax as rs
 
 #create layer "CONVERTED LINE SEGMENTS"
 layer_name = "CONVERTED LINE SEGMENTS"
@@ -11,8 +12,9 @@ if layer_index < 0:
     layer.Name = layer_name
     layer_index = sc.doc.Layers.Add(layer)
 
-#THE USER SHOULD INSERT THE PATH WHERE THE FILE 'segments.txt' IS LOCATED
-INPUT_FILE = r"C:\Users\utente\Desktop\UTokyo\TRAINEESHIP WORK\fromCadToVectors\original_CAD_data_eg\JT_2025_04_018-0\hut H_1階\segments.txt" #needs to be changed!!!
+title= "Input file"
+INPUT_FILE= rs.OpenFileName(title)
+
 
 # Read segments from file
 with open(INPUT_FILE, "r") as f:
@@ -20,7 +22,7 @@ with open(INPUT_FILE, "r") as f:
 
 for line in SEGMENTS:
     line = line.strip()
-    if not line or line.startswith("#"):
+    if not line:
         continue
 
     parts = line.split()

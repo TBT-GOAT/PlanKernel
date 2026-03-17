@@ -9,6 +9,7 @@ import math
 
 DECIMAL_PLACES       = 5
 COORD_SEPARATOR      = " "
+SPLIT_LENGTH = 1000
 INCLUDE_HIDDEN       = False
 DEDUPLICATE_SEGMENTS = True
 OUTPUT_FILENAME = ["segments.cin", "segments.txt"]
@@ -42,37 +43,37 @@ def is_nonzero_z(pt, tol): # Returns True if the Z coordinate is not zero
 def discretize_curve(curve, tol, warnings, obj_id, split_num=16): # Discretizes a curve into N segments 
     segments = []
 
+    def get_points(n_segments, curve):
+        points = []
+        for i in range(n_segments + 1):
+            fraction = i / float(n_segments)
+            success, t = curve.NormalizedLengthParameter(fraction)
+            if not success:
+                warnings.append("  WARNING [" + str(obj_id) + "]: point at fraction " + str(round(fraction, 3)) + " could not be calculated.")
+                continue
+            points.append(curve.PointAt(t))
+
+        for i in range(len(points) - 1):
+            segments.append((points[i], points[i + 1]))
+        return segments
+
     length = curve.GetLength()
-    if length is None or length < tol:
+    
+    if length is None:
+        return segments
+        
+    if length < tol:
         if not curve.IsClosed:
             warnings.append("  WARNING [" + str(obj_id) + "]: curve too short. Returning endpoint segment.")
             return [(curve.PointAtStart, curve.PointAtEnd)]
-        else:
-            warnings.append("  WARNING [" + str(obj_id) + "]: closed curve has null length. Ignored.")
-            return segments
-
-    if curve.IsClosed and length < 3 * tol:
-        warnings.append("  WARNING [" + str(obj_id) + "]: short closed curve. Dividing into " + str(split_num) + " parts.")
-        n_segments = split_num
+        elif curve.IsClosed:
+            warnings.append("  WARNING [" + str(obj_id) + "]: short closed curve. Dividing into " + str(split_num) + " parts.")
+            n_segments = split_num
+            return get_points(n_segments, curve)
     else:
-        n_segments = int(math.ceil(length))
-        if n_segments < 1:
-            n_segments = 1
-
-    points = []
-    for i in range(n_segments + 1):
-        fraction = i / float(n_segments)
-        success, t = curve.NormalizedLengthParameter(fraction)
-        if not success:
-            warnings.append("  WARNING [" + str(obj_id) + "]: point at fraction " + str(round(fraction, 3)) + " could not be calculated.")
-            continue
-        points.append(curve.PointAt(t))
-
-    for i in range(len(points) - 1):
-        segments.append((points[i], points[i + 1]))
-
-    return segments
-
+        n_segments = length // SPLIT_LENGTH 
+        n_segments = n_segments + 1 
+        return get_points(n_segments, curve)
 
 def extract_segments_from_object(obj, tol, warnings): # Extracts a list of (Point3d, Point3d) from any Rhino object
     segments = []
