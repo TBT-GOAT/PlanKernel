@@ -51,13 +51,13 @@ pip install -r requirements.txt
 
 ## Medial Axis Transform
 
-## Overview
+### Overview
 
 This program computes the **Medial Axis Transform (MAT)** from input `.cin` files and outputs the resulting network data. It supports configurable parameters via a JSON file and parallel processing using OpenMP.
 
 ---
 
-## Features
+### Features
 
 * Load configurations from `configurations.json`
 * Automatic scanning of input files if config is missing
@@ -70,7 +70,7 @@ This program computes the **Medial Axis Transform (MAT)** from input `.cin` file
 
 ---
 
-## Directory Structure
+### Directory Structure
 
 ```
 <data_folder>/
@@ -82,15 +82,15 @@ This program computes the **Medial Axis Transform (MAT)** from input `.cin` file
 
 ---
 
-## Usage
+### Usage
 
-### 1. Run the Program
+#### 1. Run the Program
 
 ```
 /your/path/to/main
 ```
 
-### 2. Input Data Folder Path
+#### 2. Input Data Folder Path
 
 You will be prompted:
 
@@ -106,15 +106,15 @@ Example:
 
 ---
 
-## Configuration
+### Configuration
 
-### Configuration File
+#### Configuration File
 
 If `configurations.json` exists, it will be loaded automatically.
 
 Otherwise, default values are used and the file will be generated.
 
-### Configurable Parameters
+#### Configurable Parameters
 
 | Parameter                   | Description                        |
 | --------------------------- | ---------------------------------- |
@@ -128,7 +128,7 @@ Otherwise, default values are used and the file will be generated.
 
 ---
 
-### Interactive Editing
+#### Interactive Editing
 
 After loading, you can modify parameters:
 
@@ -142,7 +142,7 @@ Enter number to change (0 to continue):
 
 ---
 
-## Input Files
+### Input Files
 
 * Format: `.cin`
 
@@ -156,7 +156,7 @@ Enter number to change (0 to continue):
 
 ---
 
-## Output
+### Output
 
 For each input file:
 
@@ -164,7 +164,7 @@ For each input file:
 <data_folder>/ma/ma_<filename>/
 ```
 
-### Generated Files
+#### Generated Files
 
 * Network data
 * `coordination.nk`
@@ -191,7 +191,7 @@ For each input file:
 
 ---
 
-## Parallel Processing
+### Parallel Processing
 
 * Uses OpenMP
 * Default thread count:
@@ -203,7 +203,7 @@ For each input file:
 
 ---
 
-## Progress Display
+### Progress Display
 
 Real-time progress is shown:
 
@@ -213,7 +213,7 @@ Progress: 3 / 10
 
 ---
 
-## Dependencies
+### Dependencies
 
 * C++17 or later
 * OpenMP
@@ -222,7 +222,7 @@ Progress: 3 / 10
 
 ---
 
-## Notes
+### Notes
 
 * Existing output folders are skipped (already processed cases)
 * Output directories are automatically created
