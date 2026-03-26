@@ -1,18 +1,19 @@
+
 # -*- coding: utf-8 -*-
 
 import Rhino.Geometry as rg
 import scriptcontext as sc
+import rhinoscriptsyntax as rs
 import Rhino
 import math
 
-#configuration
+#Configuration
 
 DECIMAL_PLACES       = 5
 COORD_SEPARATOR      = " "
-SPLIT_LENGTH = 1000
+SPLIT_LENGTH = 100
 INCLUDE_HIDDEN       = False
 DEDUPLICATE_SEGMENTS = True
-OUTPUT_FILENAME = ["segments.cin", "segments.txt"]
 
 LAYERS_TO_EXPORT = [
     u"\u58c1",                                      # 壁 wall
@@ -22,7 +23,7 @@ LAYERS_TO_EXPORT = [
     u"\u5e8a\u9762\u5916\u5f62\u7dda",              # 床面外形線 floor boundary line
 ]
 
-# functions
+# Functions
 
 def get_doc_tolerance():
     return sc.doc.ModelAbsoluteTolerance
@@ -63,17 +64,18 @@ def discretize_curve(curve, tol, warnings, obj_id, split_num=16): # Discretizes 
         return segments
         
     if length < tol:
-        if not curve.IsClosed:
+        if not curve.IsClosed: #if a curve DOES NOT starts and ends at the same point, IF IT DOESN'T form a continuous, enclosed shape, IF IT HAS endpoints
             warnings.append("  WARNING [" + str(obj_id) + "]: curve too short. Returning endpoint segment.")
             return [(curve.PointAtStart, curve.PointAtEnd)]
-        elif curve.IsClosed:
+        elif curve.IsClosed: #if a curve starts and ends at the same point, forming a continuous, enclosed shape without endpoints
             warnings.append("  WARNING [" + str(obj_id) + "]: short closed curve. Dividing into " + str(split_num) + " parts.")
             n_segments = split_num
             return get_points(n_segments, curve)
     else:
         n_segments = length // SPLIT_LENGTH 
-        n_segments = n_segments + 1 
+        n_segments = int(n_segments) + 1 
         return get_points(n_segments, curve)
+
 
 def extract_segments_from_object(obj, tol, warnings): # Extracts a list of (Point3d, Point3d) from any Rhino object
     segments = []
@@ -147,14 +149,21 @@ def deduplicate(segments_by_layer, tol):# Removes duplicate segments within each
         result[layer] = unique
     return result
 
+
 def format_point(pt): # Formats a point as "X Y" with the configured number of decimal places
     fmt = "{:." + str(DECIMAL_PLACES) + "f}"
     return fmt.format(pt.X) + COORD_SEPARATOR + fmt.format(pt.Y)
 
-#main
+#Main
 
 def main():
     tol = get_doc_tolerance()
+    
+    # Explode all objects in the document
+    rs.Command("_SelAll", False)
+    rs.Command("_Explode", False)
+    sc.doc.Views.Redraw()
+    
     all_objects = [o for o in sc.doc.Objects if not o.IsDeleted]
 
     segments_by_layer = {}
@@ -191,14 +200,15 @@ def main():
         print("ERROR: no segments found!")
         print("Check that the layers in the file match those in LAYERS_TO_EXPORT.")
         return
-
+        
     import os
     folder = Rhino.ApplicationSettings.FileSettings.WorkingFolder
     if not folder:
         print("ERROR: could not find the working folder.")
         return
-    for filename in OUTPUT_FILENAME:
-        output_path = os.path.join(folder, filename)
+    dwg_name = os.path.basename(folder)
+    for ext in [".cin", ".txt"]:
+        output_path = os.path.join(folder, dwg_name + ext)
         with open(output_path, "w") as f:
             for layer_name, segs in segments_by_layer.items():
                 for (p1, p2) in segs:
